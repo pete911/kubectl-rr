@@ -1,2 +1,2 @@
 # kubectl-rr
-kubernetes resource recomendation
+kubernetes resource recommendation
