@@ -38,7 +38,7 @@ func runPodCmd(_ *cobra.Command, args []string) error {
 		podFlags.FieldSelector = strings.Join(fieldSelectors, ",")
 	}
 
-	client, err := k8s.NewClient(KubeconfigPath)
+	client, err := k8s.NewClient(RestConfig())
 	if err != nil {
 		fmt.Printf("error: %v", err)
 		os.Exit(1)

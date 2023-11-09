@@ -7,19 +7,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
 )
 
 type Client struct {
 	coreV1 corev1.CoreV1Interface
 }
 
-func NewClient(kubeconfigPath string) (Client, error) {
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
-	if err != nil {
-		return Client{}, err
-	}
-	cs, err := kubernetes.NewForConfig(config)
+func NewClient(restConfig *rest.Config) (Client, error) {
+	cs, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return Client{}, err
 	}
