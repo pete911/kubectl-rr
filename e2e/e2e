@@ -1,0 +1,20 @@
+#!/bin/sh
+dir=$(dirname "$0")
+
+echo " --- [start cluster] ---"
+kind create cluster --wait 5m --name rr-test
+
+if [ "$(kubectl config current-context)" != "kind-rr-test" ]
+then
+  echo "kubectl context is not set to kind-rr-test"
+  exit 1
+fi
+
+# install prometheus chart
+kubectl create ns prometheus
+helm install prometheus prometheus-community/prometheus \
+  --namespace prometheus \
+  --wait
+
+echo "cluster is running, to delete cluster run"
+echo "kind delete cluster --name rr-test"

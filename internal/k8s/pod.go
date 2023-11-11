@@ -5,6 +5,19 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+func Namespaces(pods []Pod) []string {
+	namespaces := make(map[string]struct{})
+	for _, v := range pods {
+		namespaces[v.Namespace] = struct{}{}
+	}
+
+	var out []string
+	for k := range namespaces {
+		out = append(out, k)
+	}
+	return out
+}
+
 func toPods(pods []v1.Pod) []Pod {
 	var out []Pod
 	for _, pod := range pods {

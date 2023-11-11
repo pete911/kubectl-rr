@@ -11,7 +11,8 @@ import (
 )
 
 type Client struct {
-	coreV1 corev1.CoreV1Interface
+	RestConfig *rest.Config
+	coreV1     corev1.CoreV1Interface
 }
 
 func NewClient(restConfig *rest.Config) (Client, error) {
@@ -19,7 +20,10 @@ func NewClient(restConfig *rest.Config) (Client, error) {
 	if err != nil {
 		return Client{}, err
 	}
-	return Client{coreV1: cs.CoreV1()}, nil
+	return Client{
+		RestConfig: restConfig,
+		coreV1:     cs.CoreV1(),
+	}, nil
 }
 
 func (c Client) GetPods(ctx context.Context, namespace, labelSelector, fieldSelector string) ([]Pod, error) {
