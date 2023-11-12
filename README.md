@@ -5,19 +5,22 @@ usage.
 Prerequisites, prometheus has to be installed in the cluster.
 
 ```
-namespace kube-system pod coredns-5d78c9869d-drmv4
-  container coredns
-    cpu requests 100m limits 0 current: 0.0024475560790870273 min: 0.0009372885548091062 max: 0.002529520302870373
-namespace kube-system pod etcd-rr-test-control-plane
-  container etcd
-    cpu requests 100m limits 0 current: 0.026811003644753445 min: 0.01103471804517143 max: 0.02824301838711446
-namespace kube-system pod kindnet-8tz7r
-  container kindnet-cni
-    cpu requests 100m limits 100m current: 0.0008620287157887875 min: 0.0003609862491599064 max: 0.0008620287157887875
-namespace kube-system pod kube-apiserver-rr-test-control-plane
-  container kube-apiserver
-    cpu requests 250m limits 0 current: 0.05591350447152222 min: 0.022103391698499973 max: 0.05722482040961385
-namespace kube-system pod kube-controller-manager-rr-test-control-plane
-  container kube-controller-manager
-    cpu requests 200m limits 0 current: 0.018073922814116995 min: 0.00727293128565153 max: 0.019075219536946856
+namespace prometheus pod prometheus-kube-state-metrics-56f5765bcf-qjx66
+containers
+  kube-state-metrics
+    cpu requests 0 limits 0 current: 0.00146 min: 0.00118 max: 0.00183
+namespace prometheus pod prometheus-prometheus-node-exporter-6bgz4
+containers
+  node-exporter
+    cpu requests 0 limits 0 current: 0.00108 min: 0.00072 max: 0.00129
+namespace prometheus pod prometheus-prometheus-pushgateway-5b7b9f67bb-f59t2
+containers
+  pushgateway
+    cpu requests 0 limits 0 current: 0.00064 min: 0.00040 max: 0.00076
+namespace prometheus pod prometheus-server-7bbd49dd-4dtnc
+containers
+  prometheus-server-configmap-reload
+    cpu requests 0 limits 0 current: 0.00015 min: 0.00006 max: 0.00014
+  prometheus-server
+    cpu requests 0 limits 0 current: 0.00619 min: 0.00541 max: 0.01269
 ```
