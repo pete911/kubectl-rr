@@ -2,9 +2,12 @@ package k8s
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/json"
+	"math"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -44,49 +47,65 @@ func NewPrometheus(client Client) (Prometheus, error) {
 	return Prometheus{forwarder: forwarder}, nil
 }
 
-func (p Prometheus) CPU(namespace, pod, container string) (string, error) {
-	return p.query(fmt.Sprintf(`sum(rate(container_cpu_usage_seconds_total{namespace="%s",pod="%s", container="%s"}[5m]))`, namespace, pod, container))
+func (p Prometheus) CPU(namespace, pod, container string) (float64, error) {
+	return p.queryOneVector(fmt.Sprintf(`rate(container_cpu_usage_seconds_total{namespace="%s",pod="%s", container="%s"}[5m])`, namespace, pod, container))
 }
 
-func (p Prometheus) MinCPU(namespace, pod, container string) (string, error) {
-	return p.query(fmt.Sprintf(`sum(min_over_time(rate(container_cpu_usage_seconds_total{namespace="%s",pod="%s", container="%s"}[5m])[30m:1m]))`, namespace, pod, container))
+func (p Prometheus) ThrottledCPU(namespace, pod, container string) (float64, error) {
+	return p.queryOneVector(fmt.Sprintf(`rate(container_cpu_cfs_throttled_seconds_total{namespace="%s",pod="%s", container="%s"}[5m])`, namespace, pod, container))
 }
 
-func (p Prometheus) MaxCPU(namespace, pod, container string) (string, error) {
-	return p.query(fmt.Sprintf(`sum(max_over_time(rate(container_cpu_usage_seconds_total{namespace="%s",pod="%s", container="%s"}[5m])[30m:1m]))`, namespace, pod, container))
+func (p Prometheus) MinCPU(namespace, pod, container string) (float64, error) {
+	return p.queryOneVector(fmt.Sprintf(`min_over_time(rate(container_cpu_usage_seconds_total{namespace="%s",pod="%s", container="%s"}[5m])[30m:1m])`, namespace, pod, container))
+}
+
+func (p Prometheus) MaxCPU(namespace, pod, container string) (float64, error) {
+	return p.queryOneVector(fmt.Sprintf(`max_over_time(rate(container_cpu_usage_seconds_total{namespace="%s",pod="%s", container="%s"}[5m])[30m:1m])`, namespace, pod, container))
 }
 
 func (p Prometheus) Stop() {
 	p.forwarder.Stop()
 }
 
-func (p Prometheus) query(query string) (string, error) {
+func (p Prometheus) queryOneVector(query string) (float64, error) {
 	params := url.Values{"query": []string{query}}
 	b, err := p.forwarder.Get("/api/v1/query", params)
 	if err != nil {
-		return "", err
+		return 0, fmt.Errorf("query prometheus vector: %w", err)
 	}
 
-	var response QueryResponse
-	if err := json.Unmarshal(b, &response); err != nil {
-		return "", err
+	vectorResponse, err := toVectorResponse(b)
+	if err != nil {
+		return 0, fmt.Errorf("query prometheus vector: %w", err)
 	}
-
-	if response.Status != "success" {
-		return "", fmt.Errorf("unexpected status %s from prometheus", response.Status)
+	if len(vectorResponse) == 0 {
+		return 0, errors.New("query prometheus vector: query returned no values")
 	}
-	if response.Data.ResultType != "vector" {
-		return "", fmt.Errorf("unexpected result type %s from prometheus", response.Data.ResultType)
-	}
-	return fmt.Sprintf("%v", response.Data.Results[0].Value[1]), err
+	return vectorResponse[0].Value.Value, nil
 }
 
 func toLabels(l map[string]string) string {
 	var out []string
 	for k, v := range l {
-		out = append(out, fmt.Sprintf("%s=%s", k, v)) // TODO - fix this
+		out = append(out, fmt.Sprintf("%s=%s", k, v))
 	}
 	return strings.Join(out, ",")
+}
+
+func toVectorResponse(b []byte) ([]VectorResult, error) {
+	var response QueryResponse
+	if err := json.Unmarshal(b, &response); err != nil {
+		return nil, err
+	}
+	if response.Data.ResultType != "vector" {
+		return nil, fmt.Errorf("unexpected %s result type, expected vector", response.Data.ResultType)
+	}
+
+	var vectorResult []VectorResult
+	if err := json.Unmarshal(response.Data.Result, &vectorResult); err != nil {
+		return nil, fmt.Errorf("vecotr result: %w", err)
+	}
+	return vectorResult, nil
 }
 
 type QueryResponse struct {
@@ -95,11 +114,39 @@ type QueryResponse struct {
 }
 
 type QueryData struct {
-	ResultType string        `json:"resultType"` // "matrix" | "vector" | "scalar" | "string"
-	Results    []QueryResult `json:"result"`
+	ResultType string          `json:"resultType"` // "matrix" | "vector" | "scalar" | "string"
+	Result     json.RawMessage `json:"result"`
 }
 
-type QueryResult struct {
+type VectorResult struct {
 	Metric map[string]string `json:"metric"`
-	Value  []interface{}     `json:"value"` // TODO - fix this
+	Value  ResultValue       `json:"value"`
+}
+
+type ResultValue struct {
+	Time  time.Time
+	Value float64
+}
+
+func (r *ResultValue) UnmarshalJSON(b []byte) error {
+	var v []interface{}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	if len(v) != 2 {
+		return fmt.Errorf("unmarshal prometheus result value: expected slice with 2 elements, got %d", len(v))
+	}
+	timestamp, ok := v[0].(float64)
+	if !ok {
+		return fmt.Errorf("unmarshal prometheus result value: cannot convert timestap %v", v[0])
+	}
+	value, err := strconv.ParseFloat(v[1].(string), 64)
+	if err != nil {
+		return fmt.Errorf("unmarshal prometheus result value: convert value %w", err)
+	}
+
+	sec, dec := math.Modf(timestamp)
+	r.Time = time.Unix(int64(sec), int64(dec*(1e9)))
+	r.Value = value
+	return nil
 }

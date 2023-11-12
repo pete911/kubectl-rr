@@ -27,16 +27,18 @@ func toPods(pods []v1.Pod) []Pod {
 }
 
 type Pod struct {
-	Name       string
-	Namespace  string
-	Containers []Container
+	Name           string
+	Namespace      string
+	Containers     []Container
+	InitContainers []Container
 }
 
 func toPod(pod v1.Pod) Pod {
 	return Pod{
-		Name:       pod.Name,
-		Namespace:  pod.Namespace,
-		Containers: toContainers(pod.Spec.Containers),
+		Name:           pod.Name,
+		Namespace:      pod.Namespace,
+		Containers:     toContainers(pod.Spec.Containers),
+		InitContainers: toContainers(pod.Spec.InitContainers),
 	}
 }
 
@@ -50,6 +52,7 @@ func toContainers(containers []v1.Container) []Container {
 
 type Container struct {
 	Name     string
+	Image    string
 	Requests Resource
 	Limits   Resource
 }
@@ -61,7 +64,8 @@ type Resource struct {
 
 func toContainer(container v1.Container) Container {
 	return Container{
-		Name: container.Name,
+		Name:  container.Name,
+		Image: container.Image,
 		Requests: Resource{
 			Cpu:    container.Resources.Requests.Cpu(),
 			Memory: container.Resources.Requests.Memory(),
