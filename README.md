@@ -5,22 +5,18 @@ usage.
 Prerequisites, prometheus has to be installed in the cluster.
 
 ```
-namespace prometheus pod prometheus-kube-state-metrics-56f5765bcf-qjx66
-containers
-  kube-state-metrics
-    cpu requests 0 limits 0 current: 0.00146 min: 0.00118 max: 0.00183
-namespace prometheus pod prometheus-prometheus-node-exporter-6bgz4
-containers
-  node-exporter
-    cpu requests 0 limits 0 current: 0.00108 min: 0.00072 max: 0.00129
-namespace prometheus pod prometheus-prometheus-pushgateway-5b7b9f67bb-f59t2
-containers
-  pushgateway
-    cpu requests 0 limits 0 current: 0.00064 min: 0.00040 max: 0.00076
-namespace prometheus pod prometheus-server-7bbd49dd-4dtnc
-containers
-  prometheus-server-configmap-reload
-    cpu requests 0 limits 0 current: 0.00015 min: 0.00006 max: 0.00014
-  prometheus-server
-    cpu requests 0 limits 0 current: 0.00619 min: 0.00541 max: 0.01269
+kubectl-rr pod -n kube-system
+
+NAMESPACE    POD                             CONTAINER                CPU/R  CPU/L  CPU    CPU/Min  CPU/Max
+kube-system  aws-node-tbfqw                  aws-vpc-cni-init [init]  25m    0      -      -        -
+kube-system  aws-node-tbfqw                  aws-node                 25m    0      2.44m  2.70m    2.86m
+kube-system  aws-node-tbfqw                  aws-eks-nodeagent        25m    0      0.36m  0.35m    0.36m
+kube-system  aws-node-zn9sk                  aws-vpc-cni-init [init]  25m    0      -      -        -
+kube-system  aws-node-zn9sk                  aws-node                 25m    0      2.61m  2.22m    2.72m
+kube-system  aws-node-zn9sk                  aws-eks-nodeagent        25m    0      0.32m  0.33m    0.34m
+kube-system  coredns-d6f79c549-2zlbw         coredns                  100m   0      1.00m  1.09m    1.15m
+kube-system  coredns-d6f79c549-btjkj         coredns                  100m   0      1.09m  0.92m    1.11m
+kube-system  kube-proxy-pr8nz                kube-proxy               100m   0      0.21m  0.19m    0.23m
+kube-system  kube-proxy-szxrk                kube-proxy               100m   0      0.20m  0.21m    0.24m
+kube-system  metrics-server-fbb469ccc-jzqn7  metrics-server           100m   0      2.13m  2.08m    2.21m
 ```

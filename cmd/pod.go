@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/pete911/kubectl-rr/internal"
+	"github.com/pete911/kubectl-rr/internal/out"
 	"github.com/spf13/cobra"
 	"os"
 	"strings"
@@ -42,23 +43,6 @@ func runPodCmd(_ *cobra.Command, args []string) error {
 		os.Exit(1)
 	}
 
-	for _, pod := range pods {
-		fmt.Printf("namespace %s pod %s\n", pod.Namespace, pod.Name)
-		if len(pod.InitContainers) != 0 {
-			fmt.Println("init containers")
-			for _, container := range pod.InitContainers {
-				fmt.Printf("  %s\n", container.Name)
-				fmt.Printf("    cpu requests %s limits %s current: %.5f min: %.5f max: %.5f\n",
-					container.CPU.Request, container.CPU.Limit, container.CPU.Current, container.CPU.Min, container.CPU.Max)
-			}
-		}
-		fmt.Println("containers")
-		for _, container := range pod.Containers {
-			fmt.Printf("  %s\n", container.Name)
-			fmt.Printf("    cpu requests %s limits %s current: %.5f min: %.5f max: %.5f\n",
-				container.CPU.Request, container.CPU.Limit, container.CPU.Current, container.CPU.Min, container.CPU.Max)
-		}
-	}
-
+	out.PrintPods(pods)
 	return nil
 }

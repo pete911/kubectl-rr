@@ -94,32 +94,32 @@ func toPods(k8sPods []k8s.Pod, prom k8s.Prometheus) ([]Pod, error) {
 }
 
 func toContainer(k8sPod k8s.Pod, k8sContainer k8s.Container, prom k8s.Prometheus) (Container, error) {
-	metric, err := toCPUMetric(prom, k8sPod.Namespace, k8sPod.Name, k8sContainer.Name)
+	metric, err := toCPUMetric(prom, k8sPod.Namespace, k8sPod.Name, k8sContainer)
 	if err != nil {
 		return Container{}, fmt.Errorf("get cpu metric %s/%s container %s: %w", k8sPod.Namespace, k8sPod.Name, k8sContainer.Name, err)
 	}
-	// TODO - CPU
+
 	// 1.0 - 1 CPU
 	// 0.1 - 100m (millicpu)
 	// min for requests/limits is 1m - 0.001
 	return Container{
 		Name:   k8sContainer.Name,
-		Image:  "", // TODO
+		Image:  k8sContainer.Image,
 		CPU:    Resource{Metric: metric, Request: k8sContainer.Requests.Cpu.String(), Limit: k8sContainer.Limits.Cpu.String()},
 		Memory: Resource{}, // TODO
 	}, nil
 }
 
-func toCPUMetric(prom k8s.Prometheus, namespace, pod, container string) (Metric, error) {
-	cpu, err := prom.CPU(namespace, pod, container)
+func toCPUMetric(prom k8s.Prometheus, namespace, pod string, container k8s.Container) (Metric, error) {
+	cpu, err := prom.CPU(namespace, pod, container.Name)
 	if err != nil {
 		return Metric{}, err
 	}
-	minCpu, err := prom.MinCPU(namespace, pod, container)
+	minCpu, err := prom.MinCPU(namespace, pod, container.Name)
 	if err != nil {
 		return Metric{}, err
 	}
-	maxCpu, err := prom.MaxCPU(namespace, pod, container)
+	maxCpu, err := prom.MaxCPU(namespace, pod, container.Name)
 	if err != nil {
 		return Metric{}, err
 	}

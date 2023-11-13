@@ -3,7 +3,6 @@ package k8s
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
 	"net/url"
@@ -79,7 +78,8 @@ func (p Prometheus) queryOneVector(query string) (float64, error) {
 		return 0, fmt.Errorf("query prometheus vector: %w", err)
 	}
 	if len(vectorResponse) == 0 {
-		return 0, errors.New("query prometheus vector: query returned no values")
+		// this is ok, for example init containers will most likely have no metrics for past hour for long-running pods
+		return 0, nil
 	}
 	return vectorResponse[0].Value.Value, nil
 }
