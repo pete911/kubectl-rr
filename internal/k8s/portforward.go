@@ -80,7 +80,7 @@ func (f Forwarder) Get(path string, params url.Values) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode/100 != 2 {
-		return nil, fmt.Errorf("unexpected %s status", resp.Status)
+		return nil, fmt.Errorf("%s unexpected %s status", resp.Status, path)
 	}
 
 	b, err := io.ReadAll(resp.Body)

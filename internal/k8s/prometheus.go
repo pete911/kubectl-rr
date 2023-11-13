@@ -50,6 +50,7 @@ func (p Prometheus) CPU(namespace, pod, container string) (float64, error) {
 	return p.queryOneVector(fmt.Sprintf(`rate(container_cpu_usage_seconds_total{namespace="%s",pod="%s", container="%s"}[5m])`, namespace, pod, container))
 }
 
+// TODO - only call if the container has cpu limit set
 func (p Prometheus) ThrottledCPU(namespace, pod, container string) (float64, error) {
 	return p.queryOneVector(fmt.Sprintf(`rate(container_cpu_cfs_throttled_seconds_total{namespace="%s",pod="%s", container="%s"}[5m])`, namespace, pod, container))
 }
@@ -60,6 +61,18 @@ func (p Prometheus) MinCPU(namespace, pod, container string) (float64, error) {
 
 func (p Prometheus) MaxCPU(namespace, pod, container string) (float64, error) {
 	return p.queryOneVector(fmt.Sprintf(`max_over_time(rate(container_cpu_usage_seconds_total{namespace="%s",pod="%s", container="%s"}[5m])[30m:1m])`, namespace, pod, container))
+}
+
+func (p Prometheus) Memory(namespace, pod, container string) (float64, error) {
+	return p.queryOneVector(fmt.Sprintf(`rate(container_memory_working_set_bytes{namespace="%s", pod="%s", container="%s"}[5m])`, namespace, pod, container))
+}
+
+func (p Prometheus) MinMemory(namespace, pod, container string) (float64, error) {
+	return p.queryOneVector(fmt.Sprintf(`min_over_time(rate(container_memory_working_set_bytes{namespace="%s", pod="%s", container="%s"}[5m])[30m:1m])`, namespace, pod, container))
+}
+
+func (p Prometheus) MaxMemory(namespace, pod, container string) (float64, error) {
+	return p.queryOneVector(fmt.Sprintf(`max_over_time(rate(container_memory_working_set_bytes{namespace="%s", pod="%s", container="%s"}[5m])[30m:1m])`, namespace, pod, container))
 }
 
 func (p Prometheus) Stop() {

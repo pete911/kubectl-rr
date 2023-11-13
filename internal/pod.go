@@ -45,6 +45,7 @@ func GetPods(restConfig *rest.Config, namespace, labelSelector, fieldSelector st
 	if err != nil {
 		return nil, err
 	}
+	defer prom.Stop()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -94,9 +95,14 @@ func toPods(k8sPods []k8s.Pod, prom k8s.Prometheus) ([]Pod, error) {
 }
 
 func toContainer(k8sPod k8s.Pod, k8sContainer k8s.Container, prom k8s.Prometheus) (Container, error) {
-	metric, err := toCPUMetric(prom, k8sPod.Namespace, k8sPod.Name, k8sContainer)
+	cpuMetric, err := toCPUMetric(prom, k8sPod.Namespace, k8sPod.Name, k8sContainer)
 	if err != nil {
 		return Container{}, fmt.Errorf("get cpu metric %s/%s container %s: %w", k8sPod.Namespace, k8sPod.Name, k8sContainer.Name, err)
+	}
+
+	memoryMetric, err := toMemoryMetric(prom, k8sPod.Namespace, k8sPod.Name, k8sContainer)
+	if err != nil {
+		return Container{}, fmt.Errorf("get memory metric %s/%s container %s: %w", k8sPod.Namespace, k8sPod.Name, k8sContainer.Name, err)
 	}
 
 	// 1.0 - 1 CPU
@@ -105,8 +111,8 @@ func toContainer(k8sPod k8s.Pod, k8sContainer k8s.Container, prom k8s.Prometheus
 	return Container{
 		Name:   k8sContainer.Name,
 		Image:  k8sContainer.Image,
-		CPU:    Resource{Metric: metric, Request: k8sContainer.Requests.Cpu.String(), Limit: k8sContainer.Limits.Cpu.String()},
-		Memory: Resource{}, // TODO
+		CPU:    Resource{Metric: cpuMetric, Request: k8sContainer.Requests.Cpu.String(), Limit: k8sContainer.Limits.Cpu.String()},
+		Memory: Resource{Metric: memoryMetric, Request: k8sContainer.Requests.Memory.String(), Limit: k8sContainer.Limits.Memory.String()},
 	}, nil
 }
 
@@ -127,5 +133,25 @@ func toCPUMetric(prom k8s.Prometheus, namespace, pod string, container k8s.Conta
 		Current: cpu,
 		Min:     minCpu,
 		Max:     maxCpu,
+	}, nil
+}
+
+func toMemoryMetric(prom k8s.Prometheus, namespace, pod string, container k8s.Container) (Metric, error) {
+	memory, err := prom.Memory(namespace, pod, container.Name)
+	if err != nil {
+		return Metric{}, err
+	}
+	minMemory, err := prom.MinMemory(namespace, pod, container.Name)
+	if err != nil {
+		return Metric{}, err
+	}
+	maxMemory, err := prom.MaxMemory(namespace, pod, container.Name)
+	if err != nil {
+		return Metric{}, err
+	}
+	return Metric{
+		Current: memory,
+		Min:     minMemory,
+		Max:     maxMemory,
 	}, nil
 }
