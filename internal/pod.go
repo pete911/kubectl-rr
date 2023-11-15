@@ -9,6 +9,13 @@ import (
 	"time"
 )
 
+type Config struct {
+	Namespace        string
+	LabelSelector    string
+	FieldSelector    string
+	PrometheusConfig k8s.PrometheusConfig
+}
+
 type Pod struct {
 	Name           string
 	Namespace      string
@@ -35,13 +42,13 @@ type Metric struct {
 	Max     float64
 }
 
-func GetPods(restConfig *rest.Config, namespace, labelSelector, fieldSelector string) ([]Pod, error) {
+func GetPods(restConfig *rest.Config, config Config) ([]Pod, error) {
 	client, err := k8s.NewClient(restConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	prom, err := k8s.NewPrometheus(client)
+	prom, err := k8s.NewPrometheus(client, config.PrometheusConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +57,7 @@ func GetPods(restConfig *rest.Config, namespace, labelSelector, fieldSelector st
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	k8sPods, err := client.GetPods(ctx, namespace, labelSelector, fieldSelector)
+	k8sPods, err := client.GetPods(ctx, config.Namespace, config.LabelSelector, config.FieldSelector)
 	if err != nil {
 		return nil, err
 	}

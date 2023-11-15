@@ -7,29 +7,27 @@ import (
 	"math"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 )
 
 var (
-	// TODO - make configurable, either flags or config file
-	promNamespace = ""
-	promLabels    = map[string]string{
-		"app.kubernetes.io/name":     "prometheus",
-		"app.kubernetes.io/instance": "prometheus",
-	}
 	promPort = "9090"
 )
+
+type PrometheusConfig struct {
+	Namespace string
+	Labels    string
+}
 
 type Prometheus struct {
 	forwarder Forwarder
 }
 
-func NewPrometheus(client Client) (Prometheus, error) {
+func NewPrometheus(client Client, config PrometheusConfig) (Prometheus, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	pods, err := client.GetPods(ctx, promNamespace, toLabels(promLabels), "")
+	pods, err := client.GetPods(ctx, config.Namespace, config.Labels, "")
 	if err != nil {
 		return Prometheus{}, err
 	}
@@ -95,14 +93,6 @@ func (p Prometheus) queryOneVector(query string) (float64, error) {
 		return 0, nil
 	}
 	return vectorResponse[0].Value.Value, nil
-}
-
-func toLabels(l map[string]string) string {
-	var out []string
-	for k, v := range l {
-		out = append(out, fmt.Sprintf("%s=%s", k, v))
-	}
-	return strings.Join(out, ",")
 }
 
 func toVectorResponse(b []byte) ([]VectorResult, error) {
