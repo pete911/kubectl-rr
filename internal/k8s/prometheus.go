@@ -24,12 +24,12 @@ type Prometheus struct {
 }
 
 func NewPrometheus(client Client, config PrometheusConfig) (Prometheus, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	pods, err := client.GetPods(ctx, config.Namespace, config.Labels, "")
 	if err != nil {
-		return Prometheus{}, err
+		return Prometheus{}, fmt.Errorf("get pods: %w", err)
 	}
 
 	namespaces := Namespaces(pods)
@@ -106,7 +106,7 @@ func toVectorResponse(b []byte) ([]VectorResult, error) {
 
 	var vectorResult []VectorResult
 	if err := json.Unmarshal(response.Data.Result, &vectorResult); err != nil {
-		return nil, fmt.Errorf("vecotr result: %w", err)
+		return nil, fmt.Errorf("vector result: %w", err)
 	}
 	return vectorResult, nil
 }

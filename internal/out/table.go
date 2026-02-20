@@ -2,11 +2,12 @@ package out
 
 import (
 	"fmt"
-	"github.com/pete911/kubectl-rr/internal"
 	"math"
 	"os"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/pete911/kubectl-rr/internal"
 )
 
 func PrintPods(pods []internal.Pod) {

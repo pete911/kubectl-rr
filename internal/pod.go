@@ -3,10 +3,11 @@ package internal
 import (
 	"context"
 	"fmt"
-	"github.com/pete911/kubectl-rr/internal/k8s"
-	"k8s.io/client-go/rest"
 	"sort"
 	"time"
+
+	"github.com/pete911/kubectl-rr/internal/k8s"
+	"k8s.io/client-go/rest"
 )
 
 type Config struct {
@@ -45,12 +46,12 @@ type Metric struct {
 func GetPods(restConfig *rest.Config, config Config) ([]Pod, error) {
 	client, err := k8s.NewClient(restConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create k8s client: %w", err)
 	}
 
 	prom, err := k8s.NewPrometheus(client, config.PrometheusConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new prometheus: %w", err)
 	}
 	defer prom.Stop()
 
@@ -59,11 +60,11 @@ func GetPods(restConfig *rest.Config, config Config) ([]Pod, error) {
 
 	k8sPods, err := client.GetPods(ctx, config.Namespace, config.LabelSelector, config.FieldSelector)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get pods: %w", err)
 	}
 	pods, err := toPods(k8sPods, prom)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("convert to pods: %w", err)
 	}
 
 	sort.Slice(pods, func(i, j int) bool {

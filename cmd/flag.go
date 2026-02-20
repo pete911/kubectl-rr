@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/pete911/kubectl-rr/internal"
 	"github.com/pete911/kubectl-rr/internal/k8s"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 type PodFlags struct {
@@ -83,7 +84,7 @@ func InitPodFlags(cmd *cobra.Command, flags *PodFlags) {
 		&flags.PrometheusLabel,
 		"prometheus-label",
 		"",
-		"app.kubernetes.io/name=prometheus,app.kubernetes.io/instance=prometheus",
+		"app.kubernetes.io/name=prometheus",
 		"prometheus server label selector",
 	)
 }
